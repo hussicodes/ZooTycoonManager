@@ -5,6 +5,8 @@ using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
 using ZooTycoonManager.UI;
 using System.Diagnostics;
+using ZooTycoonManager.Subjects;
+using System;
 
 namespace ZooTycoonManager
 {
@@ -21,6 +23,9 @@ namespace ZooTycoonManager
 
         private MouseState previousMouseState;
 
+        private StatsDisplay _statsDisplay;
+        private GameStatsSubject _gameStatsSubject;
+
         public GameWorld()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -32,7 +37,7 @@ namespace ZooTycoonManager
 
         protected override void Initialize()
         {
-            _connection = new SqliteConnection("Data Source=mydb.db");
+            _connection = new SqliteConnection("Data Source=:memory:");
             _connection.Open();
 
             var createTablesCmd = _connection.CreateCommand();
@@ -100,8 +105,13 @@ namespace ZooTycoonManager
             createTablesCmd.ExecuteNonQuery();
 
             _buttons = new List<Button>();
+            _gameStatsSubject = new GameStatsSubject();
 
             previousMouseState = Mouse.GetState();
+
+            int initialHabitatCount = GetHabitatCountFromDB();
+            int initialAnimalCount = GetAnimalCountFromDB();
+            _gameStatsSubject.UpdateStats(initialHabitatCount, initialAnimalCount);
 
             base.Initialize();
         }
@@ -119,6 +129,9 @@ namespace ZooTycoonManager
             int buttonSpacing = 10;
             Vector2 startPosition = new Vector2(10, 10);
 
+            SpriteFont statsFont = Content.Load<SpriteFont>("DefaultFont");
+            _statsDisplay = new StatsDisplay(statsFont, new Vector2(10, _graphics.PreferredBackBufferHeight - 40), _gameStatsSubject);
+            _gameStatsSubject.Attach(_statsDisplay);
 
             Button button1 = new Button(_buttonTexture, _buttonFont, startPosition, "Build habitat");
             button1.Rectangle = new Rectangle((int)startPosition.X, (int)startPosition.Y, buttonWidth, buttonHeight);
@@ -134,8 +147,6 @@ namespace ZooTycoonManager
             button3.Rectangle = new Rectangle((int)button3.Position.X, (int)button3.Position.Y, buttonWidth, buttonHeight);
             button3.OnClick += HireZookeeper_Clicked;
             _buttons.Add(button3);
-
-            // TODO: use this.Content to load your game content here
         }
 
         protected override void Update(GameTime gameTime)
@@ -164,6 +175,8 @@ namespace ZooTycoonManager
                 button.Draw(_spriteBatch);
             }
 
+            _statsDisplay.Draw(_spriteBatch);
+
             _spriteBatch.End();
 
             base.Draw(gameTime);
@@ -173,23 +186,51 @@ namespace ZooTycoonManager
         private void BuildHabitat_Clicked()
         {
             Debug.WriteLine("Build Habitat button clicked!");
-            // TODO: Add SQLite code for building a habitat
-            // Example:
-            // var command = _connection.CreateCommand();
-            // command.CommandText = "INSERT INTO Habitat (name, type, size, max_animals) VALUES ('New Habitat', 'Generic', 100, 10);";
-            // command.ExecuteNonQuery();
+            var command = _connection.CreateCommand();
+            command.CommandText = "INSERT INTO Habitat (name, type, size, max_animals) VALUES ('New Habitat', 'Generic', 100, 10);";
+            command.ExecuteNonQuery();
+            _gameStatsSubject.UpdateStats(GetHabitatCountFromDB(), GetAnimalCountFromDB());
         }
 
         private void AddAnimal_Clicked()
         {
             Debug.WriteLine("Add Animal button clicked!");
-            // TODO: Add SQLite code for adding an animal
+            var checkHabitatCmd = _connection.CreateCommand();
+            checkHabitatCmd.CommandText = "SELECT habitat_id FROM Habitat LIMIT 1;";
+            var habitatIdObj = checkHabitatCmd.ExecuteScalar();
+
+            if (habitatIdObj != null && habitatIdObj != DBNull.Value)
+            {
+                long habitatId = Convert.ToInt64(habitatIdObj);
+                var command = _connection.CreateCommand();
+                command.CommandText = $"INSERT INTO Animal (name, mood, hunger, stress, habitat_id) VALUES ('New Animal', 100, 0, 0, {habitatId});";
+                command.ExecuteNonQuery();
+                _gameStatsSubject.UpdateStats(GetHabitatCountFromDB(), GetAnimalCountFromDB());
+            }
+            else
+            {
+                Debug.WriteLine("No habitat available to add an animal.");
+            }
         }
 
         private void HireZookeeper_Clicked()
         {
             Debug.WriteLine("Hire Zookeeper button clicked!");
             // TODO: Add SQLite code for hiring a zookeeper
+        }
+
+        private int GetHabitatCountFromDB()
+        {
+            var command = _connection.CreateCommand();
+            command.CommandText = "SELECT COUNT(*) FROM Habitat;";
+            return Convert.ToInt32(command.ExecuteScalar());
+        }
+
+        private int GetAnimalCountFromDB()
+        {
+            var command = _connection.CreateCommand();
+            command.CommandText = "SELECT COUNT(*) FROM Animal;";
+            return Convert.ToInt32(command.ExecuteScalar());
         }
     }
 }
