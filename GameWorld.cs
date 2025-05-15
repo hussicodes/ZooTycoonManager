@@ -2,6 +2,9 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System.Collections.Generic;
+using ZooTycoonManager.UI;
+using System.Diagnostics;
 
 namespace ZooTycoonManager
 {
@@ -10,19 +13,29 @@ namespace ZooTycoonManager
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
 
+        private SqliteConnection _connection;
+
+        private List<Button> _buttons;
+        private Texture2D _buttonTexture;
+        private SpriteFont _buttonFont;
+
+        private MouseState previousMouseState;
+
         public GameWorld()
         {
             _graphics = new GraphicsDeviceManager(this);
+            _graphics.PreferredBackBufferWidth = 1280;
+            _graphics.PreferredBackBufferHeight = 720;
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
         }
 
         protected override void Initialize()
         {
-            using var connection = new SqliteConnection("Data Source=mydb.db");
-            connection.Open();
+            _connection = new SqliteConnection("Data Source=mydb.db");
+            _connection.Open();
 
-            var createTablesCmd = connection.CreateCommand();
+            var createTablesCmd = _connection.CreateCommand();
 
             createTablesCmd.CommandText = @"CREATE TABLE IF NOT EXISTS Habitat (
                   habitat_id INTEGER PRIMARY KEY,
@@ -86,7 +99,9 @@ namespace ZooTycoonManager
 
             createTablesCmd.ExecuteNonQuery();
 
-            // TODO: Add your initialization logic here
+            _buttons = new List<Button>();
+
+            previousMouseState = Mouse.GetState();
 
             base.Initialize();
         }
@@ -94,6 +109,31 @@ namespace ZooTycoonManager
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
+            _buttonFont = Content.Load<SpriteFont>("DefaultFont"); 
+
+            _buttonTexture = new Texture2D(GraphicsDevice, 1, 1);
+            _buttonTexture.SetData(new[] { Color.White });
+
+            int buttonWidth = 150;
+            int buttonHeight = 50;
+            int buttonSpacing = 10;
+            Vector2 startPosition = new Vector2(10, 10);
+
+
+            Button button1 = new Button(_buttonTexture, _buttonFont, startPosition, "Build habitat");
+            button1.Rectangle = new Rectangle((int)startPosition.X, (int)startPosition.Y, buttonWidth, buttonHeight);
+            button1.OnClick += BuildHabitat_Clicked; 
+            _buttons.Add(button1);
+
+            Button button2 = new Button(_buttonTexture, _buttonFont, new Vector2(startPosition.X, startPosition.Y + buttonHeight + buttonSpacing), "Add animal");
+            button2.Rectangle = new Rectangle((int)button2.Position.X, (int)button2.Position.Y, buttonWidth, buttonHeight);
+            button2.OnClick += AddAnimal_Clicked;
+            _buttons.Add(button2);
+
+            Button button3 = new Button(_buttonTexture, _buttonFont, new Vector2(startPosition.X, startPosition.Y + 2 * (buttonHeight + buttonSpacing)), "Hire Zookeeper");
+            button3.Rectangle = new Rectangle((int)button3.Position.X, (int)button3.Position.Y, buttonWidth, buttonHeight);
+            button3.OnClick += HireZookeeper_Clicked;
+            _buttons.Add(button3);
 
             // TODO: use this.Content to load your game content here
         }
@@ -103,7 +143,12 @@ namespace ZooTycoonManager
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            // TODO: Add your update logic here
+            MouseState currentMouseState = Mouse.GetState();
+            foreach (var button in _buttons)
+            {
+               button.Update(currentMouseState, previousMouseState);
+            }
+            previousMouseState = currentMouseState;
 
             base.Update(gameTime);
         }
@@ -112,9 +157,39 @@ namespace ZooTycoonManager
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            // TODO: Add your drawing code here
+            _spriteBatch.Begin();
+
+            foreach (var button in _buttons)
+            {
+                button.Draw(_spriteBatch);
+            }
+
+            _spriteBatch.End();
 
             base.Draw(gameTime);
+        }
+
+        // Click handler methods
+        private void BuildHabitat_Clicked()
+        {
+            Debug.WriteLine("Build Habitat button clicked!");
+            // TODO: Add SQLite code for building a habitat
+            // Example:
+            // var command = _connection.CreateCommand();
+            // command.CommandText = "INSERT INTO Habitat (name, type, size, max_animals) VALUES ('New Habitat', 'Generic', 100, 10);";
+            // command.ExecuteNonQuery();
+        }
+
+        private void AddAnimal_Clicked()
+        {
+            Debug.WriteLine("Add Animal button clicked!");
+            // TODO: Add SQLite code for adding an animal
+        }
+
+        private void HireZookeeper_Clicked()
+        {
+            Debug.WriteLine("Hire Zookeeper button clicked!");
+            // TODO: Add SQLite code for hiring a zookeeper
         }
     }
 }
