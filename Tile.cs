@@ -10,6 +10,14 @@ namespace ZooTycoonManager
     {
         public bool Walkable;
         public int TextureIndex;
+        public bool HasTree;
+
+        public Tile()
+        {
+            Walkable = true;
+            TextureIndex = 0;
+            HasTree = false;
+        }
 
         public Tile(bool walkable, int textureIndex = 0)
         {
