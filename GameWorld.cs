@@ -446,6 +446,48 @@ namespace ZooTycoonManager
             prevMouseState = mouse;
             prevKeyboardState = keyboard;
 
+            shopButton.Update();
+            minerBtn.Update();
+            knightBtn.Update();
+            villagerBtn.Update();
+            archerBtn.Update();
+            fortressBtn.Update();
+            towerBtn.Update();
+            houseBtn.Update();
+            treeBtn.Update();
+
+
+
+            if (shopButton.IsClicked)
+            {
+                isShopMenuOpen = !isShopMenuOpen;
+            }
+            if (isShopMenuOpen)
+            {
+                structuresButton.Update();
+                unitButton.Update();
+
+                if (structuresButton.IsClicked)
+                {
+                    showStructureMenu = !showStructureMenu;
+                    showUnitMenu = false;
+                }
+                if (unitButton.IsClicked)
+                {
+                    showUnitMenu = !showUnitMenu;
+                    showStructureMenu = false;
+                }
+
+                if (showUnitMenu)
+                {
+                    
+                }
+
+                if (showStructureMenu)
+                {
+                    
+                }
+            }
 
 
             base.Update(gameTime);
