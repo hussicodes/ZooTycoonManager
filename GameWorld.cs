@@ -560,10 +560,11 @@ namespace ZooTycoonManager
                     }
                 }
 
-                _spriteBatch.End();
+                
 
                 base.Draw(gameTime);
             }
+            _spriteBatch.End();
         }
 
         public int GetNextAnimalId()
