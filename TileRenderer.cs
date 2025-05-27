@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using SharpDX.Direct2D1.Effects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,11 +29,7 @@ namespace ZooTycoonManager
                     Tile tile = map.Tiles[x, y];
                     Texture2D texture = tileTextures[tile.TextureIndex];
 
-                    spriteBatch.Draw(
-                        texture,
-                        new Vector2(x * tileSize, y * tileSize),
-                        Color.White
-                    );
+                    spriteBatch.Draw(texture, new Vector2(x * tileSize, y * tileSize), Color.White);
                 }
             }
         }
