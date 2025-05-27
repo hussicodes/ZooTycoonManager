@@ -315,8 +315,6 @@ namespace ZooTycoonManager
                 // Optionally, provide feedback to the user that they don't have enough money
                 Debug.WriteLine("Not enough money to place a habitat.");
             }
-
-            
         }
 
         protected override void Update(GameTime gameTime)
@@ -448,6 +446,8 @@ namespace ZooTycoonManager
             prevMouseState = mouse;
             prevKeyboardState = keyboard;
 
+
+
             base.Update(gameTime);
         }
 
@@ -559,9 +559,6 @@ namespace ZooTycoonManager
                             btn.Draw(_spriteBatch);
                     }
                 }
-
-                
-
                 base.Draw(gameTime);
             }
             _spriteBatch.End();
