@@ -45,6 +45,37 @@ namespace ZooTycoonManager
         private Vector2 _visitorSpawnPosition;
         private const int VISITOR_SPAWN_REWARD = 20;
 
+        // Buttons
+        private Texture2D shopButtonBackground;
+        private Texture2D shopIcon;
+        private Texture2D wideButtonTexture;
+
+        Button shopButton;
+        Button minerBtn;
+        Button knightBtn;
+        Button archerBtn;
+        Button villagerBtn;
+        Button structuresButton;
+        Button unitButton;
+        Button fortressBtn;
+        Button towerBtn;
+        Button houseBtn;
+        Button treeBtn;
+
+        List<Button> structureButtons = new List<Button>();
+        List<Button> unitButtons = new List<Button>();
+
+        //For selected unit border
+        private Texture2D pixel;
+
+        bool showStructureMenu = false;
+        bool showUnitMenu = false;
+
+        public Unit Selected_unit { get; set; }
+
+        bool isShopMenuOpen = false;
+        SpriteFont font;
+
         // Public property to access the spawn/exit position
         public Vector2 VisitorSpawnExitPosition => _visitorSpawnPosition;
 
@@ -192,6 +223,10 @@ namespace ZooTycoonManager
             tileTextures[0] = Content.Load<Texture2D>("Grass1");
             tileTextures[1] = Content.Load<Texture2D>("Dirt1");
 
+            //Used for selected unit border
+            pixel = new Texture2D(GraphicsDevice, 1, 1);
+            pixel.SetData(new[] { Color.White });
+
             // map = new Map(GRID_WIDTH, GRID_HEIGHT); // yo, this is where the size happens -- This line is now redundant
             tileRenderer = new TileRenderer(tileTextures);
 
@@ -226,11 +261,66 @@ namespace ZooTycoonManager
                 // Optionally, provide feedback to the user that they don't have enough money
                 Debug.WriteLine("Not enough money to place a habitat.");
             }
+
+            shopButtonBackground = Content.Load<Texture2D>("Button_Disable");
+            shopIcon = Content.Load<Texture2D>("Disable_07");
+            wideButtonTexture = Content.Load<Texture2D>("Button_Disable_3Slides");
+
+            Rectangle buttonBounds = new Rectangle(
+                GraphicsDevice.Viewport.Width - 64 - 10,
+                10,
+                64,
+                64
+                );
+            shopButton = new Button(shopButtonBackground, font, buttonBounds, "");
+
+
+
+            int menuOffsetX = 140; // hvor langt ind fra knappen, så intet klippes
+            int menuX = shopButton.Bounds.X - menuOffsetX;
+            int menuY = shopButton.Bounds.Bottom + 20;
+
+            Rectangle structuresRect = new Rectangle(
+                menuX + 10, menuY, 160, 40);
+            structuresButton = new Button(wideButtonTexture, font, structuresRect, "Structures");
+
+            Rectangle unitRect = new Rectangle(
+                menuX + 10, menuY + 50, 160, 40);
+            unitButton = new Button(wideButtonTexture, font, unitRect, "Unit");
+
+            fortressBtn = new Button(wideButtonTexture, font, new Rectangle(1050, 200, 192, 40), "Fortress - 50");
+            structureButtons.Add(fortressBtn);
+
+            towerBtn = new Button(wideButtonTexture, font, new Rectangle(1050, 250, 192, 40), "Tower - 40");
+            structureButtons.Add(towerBtn);
+
+            houseBtn = new Button(wideButtonTexture, font, new Rectangle(1050, 300, 192, 40), "House - 25");
+            structureButtons.Add(houseBtn);
+
+            treeBtn = new Button(wideButtonTexture, font, new Rectangle(1050, 350, 192, 40), "Tree - 2");
+            structureButtons.Add(treeBtn);
+
+            villagerBtn = new Button(wideButtonTexture, font, new Rectangle(1050, 200, 192, 40), "Villager - 5");
+            unitButtons.Add(villagerBtn);
+
+            minerBtn = new Button(wideButtonTexture, font, new Rectangle(1050, 250, 192, 40), "Miner - 15");
+            unitButtons.Add(minerBtn);
+
+            knightBtn = new Button(wideButtonTexture, font, new Rectangle(1050, 300, 192, 40), "Knight - 30");
+            unitButtons.Add(knightBtn);
+
+            archerBtn = new Button(wideButtonTexture, font, new Rectangle(1050, 350, 192, 40), "Archer - 25");
+            unitButtons.Add(archerBtn);
+
+            int topPadding = 10;
+            int spacing = 10;
+            int displayWidth = wideButtonTexture.Width;
+            int displayHeight = wideButtonTexture.Height;
         }
 
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == Microsoft.Xna.Framework.Input.ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Microsoft.Xna.Framework.Input.Keys.Escape))
                 Exit();
 
             _fpsCounter.Update(gameTime);  // Update FPS counter
@@ -239,7 +329,7 @@ namespace ZooTycoonManager
             KeyboardState keyboard = Keyboard.GetState();
 
             // Handle F11 for fullscreen toggle
-            if (keyboard.IsKeyDown(Keys.F11) && !prevKeyboardState.IsKeyDown(Keys.F11))
+            if (keyboard.IsKeyDown(Keys.F11) && !prevKeyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.F11))
             {
                 ToggleFullscreen();
             }
@@ -248,7 +338,7 @@ namespace ZooTycoonManager
             _camera.Update(gameTime, mouse, prevMouseState, keyboard, prevKeyboardState);
 
             // Handle 'C' key press for toggling camera clamping
-            if (keyboard.IsKeyDown(Keys.C) && !prevKeyboardState.IsKeyDown(Keys.C))
+            if (keyboard.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.C) && !prevKeyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.C))
             {
                 _camera.ToggleClamping();
             }
@@ -322,7 +412,7 @@ namespace ZooTycoonManager
                 Debug.WriteLine("Added $100,000 for debugging.");
             }
 
-            if (mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed)
+            if (mouse.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed && prevMouseState.LeftButton != Microsoft.Xna.Framework.Input.ButtonState.Pressed)
             {
                 // Make the first animal in the first habitat pathfind to the world mouse position
                 if (habitats.Count > 0 && habitats[0].GetAnimals().Count > 0)
@@ -418,9 +508,61 @@ namespace ZooTycoonManager
             Vector2 moneyPosition = new Vector2(10, 10); // Top-left corner
             _spriteBatch.DrawString(_font, _moneyDisplay.MoneyText, moneyPosition, Color.Gold);
 
-            _spriteBatch.End();
+            shopButton.Draw(_spriteBatch);
+            _spriteBatch.Draw(
+                shopIcon,
+                new Vector2(shopButton.Bounds.X, shopButton.Bounds.Y),
+                Color.White
+                );
 
-            base.Draw(gameTime);
+            Vector2 iconPos = new Vector2(
+                shopButton.Bounds.X + (shopButton.Bounds.Width - shopIcon.Width) / 2,
+                shopButton.Bounds.Y + (shopButton.Bounds.Height - shopIcon.Height) / 2
+);
+            _spriteBatch.Draw(shopIcon, iconPos, Color.White);
+
+
+            if (Selected_unit != null)
+            {
+                var pos = Selected_unit.Position;
+                var spriteSize = new Point(Selected_unit.Sprite.Width, Selected_unit.Sprite.Height);
+                Rectangle rect = new Rectangle((int)(pos.X - spriteSize.X / 2), (int)(pos.Y - spriteSize.Y / 2), spriteSize.X, spriteSize.Y);
+                DrawRectangle(_spriteBatch, rect, 2, Color.Yellow);
+
+                if (isShopMenuOpen)
+                {
+                    int menuOffsetX = 140;
+                    int menuX = shopButton.Bounds.X - menuOffsetX;
+                    int menuY = shopButton.Bounds.Bottom + 5;
+
+                    // Tegn menu-baggrund
+                    Rectangle menuRect = new Rectangle(menuX, menuY, 180, 120);
+                    _spriteBatch.Draw(wideButtonTexture, menuRect, Color.White);
+
+                    // Menu-overskrift
+                    _spriteBatch.DrawString(font, "", new Vector2(menuRect.X + 10, menuRect.Y + 10), Color.White);
+
+                    // Tegn knapper
+                    structuresButton.Draw(_spriteBatch);
+                    unitButton.Draw(_spriteBatch);
+
+                    if (showStructureMenu)
+                    {
+                        foreach (var btn in structureButtons)
+                            btn.Draw(_spriteBatch);
+                    }
+
+                    if (showUnitMenu)
+                    {
+                        foreach (var btn in unitButtons)
+                            btn.Draw(_spriteBatch);
+                    }
+                }
+
+                _spriteBatch.End();
+
+                base.Draw(gameTime);
+            }
         }
 
         public int GetNextAnimalId()
@@ -450,5 +592,14 @@ namespace ZooTycoonManager
                 Debug.WriteLine($"Attempted to confirm despawn for a null or already processed/removed visitor.");
             }
         }
+
+        private void DrawRectangle(SpriteBatch spriteBatch, Rectangle rectangle, int thickness, Color color)
+        {
+            spriteBatch.Draw(pixel, new Rectangle(rectangle.X, rectangle.Y, rectangle.Width, thickness), color);
+            spriteBatch.Draw(pixel, new Rectangle(rectangle.X, rectangle.Y + rectangle.Height - thickness, rectangle.Width, thickness), color);
+            spriteBatch.Draw(pixel, new Rectangle(rectangle.X, rectangle.Y, thickness, rectangle.Height), color);
+            spriteBatch.Draw(pixel, new Rectangle(rectangle.X + rectangle.Width - thickness, rectangle.Y, thickness, rectangle.Height), color);
+        }
+
     }
 }
