@@ -1,7 +1,7 @@
 namespace ZooTycoonManager
 {
-    public interface IObserver
+    public interface IObserver<in T>
     {
-        void Update(decimal newMoneyAmount);
+        void Update(T value);
     }
 } 

@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 namespace ZooTycoonManager
 {
-    public class MoneyManager : ISubject
+    public class MoneyManager : ISubject<decimal>
     {
         private static MoneyManager _instance;
         private static readonly object _lock = new object();
-        private List<IObserver> _observers = new List<IObserver>();
+        private List<IObserver<decimal>> _observers = new List<IObserver<decimal>>();
         private decimal _currentMoney;
         public decimal CurrentMoney => _currentMoney;
         private MoneyManager() { }
@@ -62,7 +62,7 @@ namespace ZooTycoonManager
             return false;
         }
 
-        public void Attach(IObserver observer)
+        public void Attach(IObserver<decimal> observer)
         {
             if (!_observers.Contains(observer))
             {
@@ -70,7 +70,7 @@ namespace ZooTycoonManager
             }
         }
 
-        public void Detach(IObserver observer)
+        public void Detach(IObserver<decimal> observer)
         {
             _observers.Remove(observer);
         }

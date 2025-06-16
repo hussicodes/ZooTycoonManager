@@ -10,7 +10,7 @@ using Vector2 = Microsoft.Xna.Framework.Vector2;
 
 namespace ZooTycoonManager
 {
-    public class StatDisplay
+    public class StatDisplay : IObserver<string>
     {
         private SpriteFont _font;
         private Vector2 _position;
@@ -31,6 +31,11 @@ namespace ZooTycoonManager
             _bgOffset = bgOffset;
             _bgScale = bgScale;
             _text = "";
+        }
+
+        public void Update(string value)
+        {
+            SetText(value);
         }
 
         public void SetText(string text)

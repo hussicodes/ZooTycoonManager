@@ -1,9 +1,9 @@
 namespace ZooTycoonManager
 {
-    public interface ISubject
+    public interface ISubject<T>
     {
-        void Attach(IObserver observer);
-        void Detach(IObserver observer);
+        void Attach(IObserver<T> observer);
+        void Detach(IObserver<T> observer);
         void Notify();
     }
 } 

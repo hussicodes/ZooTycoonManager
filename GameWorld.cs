@@ -119,7 +119,6 @@ namespace ZooTycoonManager
 
         private bool isPlacingEnclosure = true;
         private List<Habitat> habitats;
-        private List<Visitor> visitors;
         private List<Shop> shops;
         private int _nextHabitatId = 1;
         private int _nextAnimalId = 1;
@@ -171,7 +170,7 @@ namespace ZooTycoonManager
 
         public List<Visitor> GetVisitors()
         {
-            return visitors;
+            return VisitorManager.Instance.GetVisitors();
         }
 
         public List<Shop> GetShops()
@@ -220,7 +219,6 @@ namespace ZooTycoonManager
             WalkableMap = map.ToWalkableArray();
 
             habitats = new List<Habitat>();
-            visitors = new List<Visitor>();
             shops = new List<Shop>();
             _boundaryFenceTilePositions = new List<Vector2>();
             _boundaryFenceTileCoordinates = new HashSet<Vector2>();
@@ -429,7 +427,11 @@ namespace ZooTycoonManager
             Texture2D displayBg = Content.Load<Texture2D>("Button_Blue_3Slides");
 
             _visitorDisplay = new StatDisplay(uiFont, new Vector2(220, 10), Color.Black, 1.25f, displayBg, Vector2.Zero, new Vector2(1f, 1f));
+            VisitorManager.Instance.Attach(_visitorDisplay);
+            VisitorManager.Instance.Notify();
             _animalDisplay = new StatDisplay(uiFont, new Vector2(430, 10), Color.Black, 1.25f, displayBg, Vector2.Zero, new Vector2(1f, 1f));
+            AnimalManager.Instance.Attach(_animalDisplay);
+            AnimalManager.Instance.Notify();
 
             _infoButtonTexture = Content.Load<Texture2D>("Button_Blue");
             _infoPanelTexture = Content.Load<Texture2D>("Button_Blue_9Slides");
@@ -484,21 +486,20 @@ namespace ZooTycoonManager
 
         protected override void Update(GameTime gameTime)
         {
-
             MouseState mouse = Mouse.GetState();
             Point mousePos = mouse.Position;
 
             if (_currentGameState == GameState.MainMenu)
             {
-                for (int i = 0; i < _buttonRectangles.Count; i++)
-                {
-                    Rectangle buttonRect = _buttonRectangles[i];
+            for (int i = 0; i < _buttonRectangles.Count; i++)
+            {
+                Rectangle buttonRect = _buttonRectangles[i];
 
                     if (buttonRect.Contains(mousePos) &&
                         mouse.LeftButton == ButtonState.Pressed &&
                         prevMouseState.LeftButton == ButtonState.Pressed)
                     {
-                        string label = _buttonLabels[i];
+                string label = _buttonLabels[i];
 
                         if (label == "Start Game")
                         {
@@ -522,7 +523,7 @@ namespace ZooTycoonManager
                 Exit();
 
             _fpsCounter.Update(gameTime); //FPS
-            _visitorDisplay.SetText($"Visitors: {visitors.Count}");
+            _visitorDisplay.SetText($"Visitors: {VisitorManager.Instance.GetVisitors().Count}");
             _animalDisplay.SetText($"Animals: {habitats.Sum(h => h.GetAnimals().Count)}");
 
             KeyboardState keyboard = Keyboard.GetState();
@@ -560,12 +561,7 @@ namespace ZooTycoonManager
                 {
                     _visitorSpawnTimer = 0f;
 
-                    Visitor newVisitor = new Visitor(_visitorSpawnTileCoord, _nextVisitorId++);
-                    newVisitor.LoadContent(Content);
-                    visitors.Add(newVisitor);
-
-                    MoneyManager.Instance.AddMoney(VISITOR_SPAWN_REWARD);
-                    Debug.WriteLine($"Visitor spawned at {_visitorSpawnTileCoord}. Added ${VISITOR_SPAWN_REWARD}.");
+                    SpawnVisitor();
                 }
             }
             else
@@ -778,7 +774,7 @@ namespace ZooTycoonManager
 
                     if (!entityClickedThisFrame)
                     {
-                        foreach (var visitor in visitors)
+                        foreach (var visitor in VisitorManager.Instance.GetVisitors())
                         {
                             Rectangle visitorBoundingBox = new Rectangle((int)(visitor.Position.X - 16), (int)(visitor.Position.Y - 16), 32, 32);
                             if (visitorBoundingBox.Contains(worldMousePosForEntityCheck))
@@ -828,7 +824,7 @@ namespace ZooTycoonManager
             {
                 foreach (var visitorToRemove in _visitorsToDespawn)
                 {
-                    visitors.Remove(visitorToRemove);
+                    VisitorManager.Instance.RemoveVisitor(visitorToRemove);
                     Debug.WriteLine($"Visitor {visitorToRemove.VisitorId} has been despawned.");
                 }
                 _visitorsToDespawn.Clear();
@@ -1024,8 +1020,8 @@ namespace ZooTycoonManager
             }
 
             // Road preview
-            if (_isPlacingRoadModeActive)
-            {
+                if (_isPlacingRoadModeActive)
+                {
                 MouseState mouse = Mouse.GetState();
                 Vector2 worldMousePosition = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
                 Vector2 tilePreviewPosition = PixelToTile(worldMousePosition);
@@ -1056,7 +1052,7 @@ namespace ZooTycoonManager
             }
 
             // Visitors
-            foreach (var visitor in visitors)
+            foreach (var visitor in VisitorManager.Instance.GetVisitors())
             {
                 visitor.Draw(_spriteBatch);
             }
@@ -1157,8 +1153,8 @@ namespace ZooTycoonManager
             // UI
             _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
-            if (_isPlacingRoadModeActive)
-            {
+                if (_isPlacingRoadModeActive)
+                {
                 Vector2 infoPosition = new Vector2(550, 650);
                 _spriteBatch.DrawString(_font, "Press Mouse 1 to place tiles", infoPosition, Color.Yellow);
                 _spriteBatch.DrawString(_font, "Press P to exit tile mode", infoPosition + new Vector2(0, 25), Color.Yellow);
@@ -1307,23 +1303,11 @@ namespace ZooTycoonManager
 
         public void ConfirmDespawn(Visitor visitor)
         {
-            if (visitor != null && !_visitorsToDespawn.Contains(visitor) && !visitors.Contains(visitor))
+            if (VisitorManager.Instance.GetVisitors().Contains(visitor))
             {
-                _visitorsToDespawn.Add(visitor);
-                Debug.WriteLine($"Visitor {visitor.VisitorId} confirmed exit and added to despawn queue.");
-            }
-            else if (visitor != null && visitors.Contains(visitor) && !_visitorsToDespawn.Contains(visitor))
-            {
-                _visitorsToDespawn.Add(visitor);
-                Debug.WriteLine($"Visitor {visitor.VisitorId} confirmed exit and added to despawn queue.");
-            }
-            else if (visitor != null && _visitorsToDespawn.Contains(visitor))
-            {
-                Debug.WriteLine($"Visitor {visitor.VisitorId} already in despawn queue. Confirmation ignored.");
-            }
-            else
-            {
-                Debug.WriteLine($"Attempted to confirm despawn for a null or already processed/removed visitor.");
+                VisitorManager.Instance.RemoveVisitor(visitor);
+                MoneyManager.Instance.AddMoney(VISITOR_SPAWN_REWARD);
+                ScoreManager.Instance.Score += 10;
             }
         }
 
@@ -1635,6 +1619,13 @@ namespace ZooTycoonManager
             HideAllMenus();
             _currentPlacement = PlacementMode.PlaceWaterhole;
             Console.WriteLine("Placement mode: Waterhole activated");
+        }
+
+        private void SpawnVisitor()
+        {
+            var visitor = new Visitor(new Vector2(VISITOR_SPAWN_TILE_X, VISITOR_SPAWN_TILE_Y), _nextVisitorId++);
+            visitor.LoadContent(Content);
+            VisitorManager.Instance.AddVisitor(visitor);
         }
     }
 }

@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace ZooTycoonManager
 {
-    public class MoneyDisplay : IObserver
+    public class MoneyDisplay : IObserver<decimal>
     {
         public string MoneyText { get; private set; }
         private SpriteFont _font;
@@ -28,9 +28,9 @@ namespace ZooTycoonManager
             _bgScale = bgScale ?? Vector2.One;
         }
 
-        public void Update(decimal newMoneyAmount)
+        public void Update(decimal value)
         {
-            MoneyText = string.Format(CultureInfo.CurrentCulture, "{0:N0} $", newMoneyAmount);
+            MoneyText = string.Format(CultureInfo.CurrentCulture, "{0:N0} $", value);
         }
 
         public void Draw(SpriteBatch spriteBatch)
